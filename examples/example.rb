@@ -36,18 +36,45 @@ default_report_expenses.each do |row|
 end
 
 
+all_expenses             = Expense.all
 date_sorted_expenses     = Expense.sort(:date).all
 tag_sorted_expenses      = Expense.sort(:tags).all
 amount_sorted_expenses   = Expense.sort(:amount).all
 type_sorted_expensese    = Expense.sort(:type).all
 oldest_expense_date      = Expense.sort(:date).first
 newest_expense_date      = Expense.sort(:date).last
-group_by_date            = Expense.group(:date)
+
+#Surely there is a better way to do this
+
+cpapdotcom_amount = Expense.where(:tags => 'CPAP.com')   
+cpapdotcom_total = 0
+cpapdotcom_amount.each { |row| cpapdotcom_total += row['amount'] }
+
+cpapdropshipdotcom_amount = Expense.where(:tags => 'CPAPDropShip.com')   
+cpapdropshipdotcom_total = 0
+cpapdropshipdotcom_amount.each { |row|  cpapdropshipdotcom_total += row['amount'] }
+
+hms_amount = Expense.where(:tags => 'HMS')   
+hms_total = 0
+hms_amount.each { |row| hms_total += row['amount'] }
+
+hmsd_amount = Expense.where(:tags => 'HMSD')   
+hmsd_total = 0
+hmsd_amount.each { |row|  hmsd_total += row['amount'] }
+
+amount_total = 0
+all_expenses.each { |row| amount_total += row['amount'] }
 
 oldest_date = "#{oldest_expense_date.date.month}/#{oldest_expense_date.date.day}/#{oldest_expense_date.date.year}"
 newest_date = "#{newest_expense_date.date.month}/#{newest_expense_date.date.day}/#{newest_expense_date.date.year}"
 
 wrapper_array = Array.new
+
+total_array = [["CPAP.com", cpapdotcom_total], 
+               ["CPAPDropShip.com", cpapdropshipdotcom_total], 
+               ["HMS", hms_total], 
+               ["HMSD", hmsd_total], 
+               ["Grand Total", amount_total]]
 
 tag_sorted_expenses.each_with_index do |row, index|
   inside_array = Array.new
@@ -59,19 +86,34 @@ tag_sorted_expenses.each_with_index do |row, index|
   wrapper_array << inside_array
 end
 
-query_results = ExpenseCubicle.query { select :tags, :date }
+#query_results = ExpenseCubicle.query { select :tags, :date }
 
-pp query_results
+#pp query_results
 
 
-Prawn::Document.generate("multi_page_table.pdf") do
+Prawn::Document.generate("johnny-expenses.pdf") do
 
-  text "Johnny Goodman's Expenses #{oldest_date} - #{newest_date}"
+  text "Johnny Goodman's Expenses #{oldest_date} - #{newest_date} (Total: $#{amount_total})"
 
   table wrapper_array, 
   :headers => ['Date', 'Amount', 'Type', 'Notes', 'Company'], 
   :border_style => :grid, 
   :font_size => 8, 
   :column_widths => { 0 => 75, 1 => 60, 3 => 200 }
+  
+  # text "CPAP.com Total: #{cpapdotcom_total} \n\n
+  #       CPAPDropShip.com Total: #{cpapdropshipdotcom_total} \n\n
+  #       Grand Total: #{amount_total}"
 
+  start_new_page
+  
+  text "Totals: "
+  
+  table total_array, 
+  :headers => ['Company', 'Total'], 
+  :border_style => :grid, 
+  :font_size => 8
+  #:column_widths => { 0 => 75, 1 => 60, 3 => 200 }
+
+  text "\n\nEmployee:\n\nDate: #{Date.today.strftime('%m/%d/%Y')}\n\nApproved By:\n\nDate:\n\n"
 end

@@ -35,3 +35,7 @@ end
 5. Implement Cubicle for sum, ave, group and count mongo functionality
 
 6. Implement Hashie
+
+7. Clean up Class structure
+
+8. Add currency class
