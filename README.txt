@@ -24,5 +24,14 @@ end
 
 == TO DO
 
-1. Support tags and category arrays in json feeds
- 
+1. Support tags arrays in json feeds (DONE)
+
+2. Support category arrays in json feeds
+
+3. Figure out how to store precision 2 floats in mongodb
+
+4. Fill out class methods for all supported xpenser Expenses, Tags, Categories and Reports. 
+
+5. Implement Cubicle for sum, ave, group and count mongo functionality
+
+6. Implement Hashie

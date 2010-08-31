@@ -6,20 +6,65 @@ require 'faster_csv'
 require 'pp'
 require '../config/passwords.rb'
 require 'mongo_mapper'
-require 'hashie'
-require 'hashie/mash'
+require 'bigdecimal'
+require 'cubicle'
+
+#http://tomdoc.org/
 
 class Expense
-  
   include MongoMapper::Document
   key :expense_id, ObjectId
-  key :amount, Integer
+  key :amount, Float #FloatToDecimalPrecision
   key :date, Time
   key :notes, String
-  key :tags, Array
-  key :category, Array
-
+  key :tags, String
+  key :type, String # type => company 
 end
+
+class ExpenseCubicle
+  extend Cubicle::Aggregation
+
+  #date       :date,      :field_name=>'match_date'
+  #dimension  :month,     :expression=>'this.match_date.substring(0,7)'
+  #dimension  :year,      :expression=>'this.match_date.substring(0,4)'
+
+  #dimensions :table,
+  #           :winning_hand
+  #dimension :winner,     :field_name=>'winner.name'
+
+  #count :total_hands,    :expression=>'true'
+  #count :total_draws,    :expression=>'this.winning_hand=="draw"'
+  dimensions :tags,
+             :date
+  sum       :total_amount,  :field_name=>'amount'
+  #dimension :type           :field_name=>'type'
+  
+  #avg   :avg_winnings,   :field_name=>'amount_won'
+
+  #ratio :draw_pct,       :total_draws, :total_hands
+end
+
+
+=begin
+class FloatToDecimalPrecision < Float
+  
+  def self.to_mongo(value)
+    two_decimal_float = 0
+    value.each do |array_element|
+      array_element.each do |float|
+        amount = BigDecimal.new(float)
+        rounded = (amount * 100).round / 100
+        two_decimal_float = printf('%.02f', rounded)
+      end
+    end
+    two_decimal_float
+  end
+
+  def self.from_mongo(value)
+    value || nil
+  end
+end
+=end  
 
 class Xpenser
   
@@ -43,6 +88,48 @@ class Xpenser
   def initialize(user, pass)
     self.class.basic_auth user, pass
   end
+  
+  
+  # Public: Parse date into xpenser date format.
+  #
+  # date  - The String or Date object that a user passes in for parsing.
+  #
+  # Examples
+  #
+  #   puts format_xpenser_dates('20080924')
+  #   # => 2008-09-24
+  #   puts format_xpenser_dates('2010-05-21')
+  #   # => 2010-05-21
+  #   puts format_xpenser_dates('05/03/2010')
+  #   # => 2010-05-03
+  #   puts format_xpenser_dates('jello')
+  #   # => ArgumentError: Could not turn jello into an xpenser formatted date
+  #
+  # Returns a xpenser date formatted String. 
+  def format_xpenser_dates(date)
+    date = date.to_s if date.class == Date
+
+    if date =~ /\d{4}-\d{2}-\d{2}/ 
+      puts "we matched without parsing. returning date..."
+      return date 
+    else
+      puts "we parsed Date.parse(date).strftime('%Y-%m-%d')"
+
+      begin
+        date = Date.parse(date).strftime('%Y-%m-%d') #need to catch errors here
+      rescue
+        raise ArgumentError.new("Could not turn #{date} into an xpenser formatted date")
+      end
+    end
+
+    if date =~ /\d{4}-\d{2}-\d{2}/ 
+      puts "post parse, we matched. returning date..."
+      return date
+    else
+        "The parsed date is #{date} and is not correctly formatted"
+    end
+  end
+
 
   # Public: Get all expenses for the default report. 
   #
@@ -103,30 +190,51 @@ class Xpenser
     get("/api/v1.0/expenses/?report=*&date_op=gt&date=#{date}")
   end
   
-  def self.get_all_tags
-    get("/api/v1.0/tags/")    
-  end
-  
-  
-  # Public: 
+
+  # Public: Get a id => name hash of all tags used in your xpenser reports
   #
   # Examples
   #
-  #   pp Class.get_default_report 
+  #   xpenser_tag_hash = Xpenser.get_all_tags
+  #   pp xpenser_tag_hash
   #
-  #   # => #<Expense category: [36677], notes: "UpsellIt.com - 5% of July's Upsellit Generated Sales", 
-  #         amount: 2131, expense_id: nil, _id: BSON::ObjectID('4c7921426cd1692525000066'), tags: [], 
-  #         date: Sat Jul 31 14:04:00 UTC 2010, type: "Web Software Rental">,
-  #         <Expense category: [36675], notes: "Endicia.com - US Mail Shipments Conf 161474", 
-  #          amount: 400, expense_id: nil, _id: BSON::ObjectID('4c7921426cd1692525000001'), tags: [], 
-  #          date: Wed Aug 25 21:43:45 UTC 2010, type: "Freight">
+  #   #=>  {93923 =>"Tag1",
+  #         84526 =>"Tag2",
+  #         50587 =>"Tag3",
+  #         25247=>"Tag4"}
+  #   
+  # Returns Hash of tag names in tag_id => tag_name format
+  def self.get_all_tags
+    array = get("/api/v1.0/tags/")
+    name_array = []
+    id_array = []
+    
+    array.each do |hash_row|
+      hash_row.each_pair do |k,v|
+         k == "id" ?  id_array << v : name_array << v
+      end
+    end
+    Hash[id_array.zip(name_array)]
+  end
+  
+  
+  # Public: Convert tag ids to tag names for each tag id present.
   #
-  # Returns HTTParty::Response Object.  
-  def self.tag_to_name(tag_id_array, xpenser_tag_array) # returns array
+  # tag_id_array - The Array that contains each tag_id in the json array
+  # xpenser_tag_array - The Hash that contains all tags in tag_id => tag_name format
+  #
+  # Examples
+  #
+  #   returned_array = Xpenser.tag_to_name(tag_id_array, xpenser_tag_array)
+  #   # => ['Tag1', Tag2'] 
+  #   
+  # Returns Array of matching tag names
+  def self.tag_id_to_name(tag_id_array, xpenser_tag_hash)
     array = Array.new
-    xpenser_tag_array.each do |row|
-      if row['id'] == tag_id
-        array << row['name'].to_s
+    
+    tag_id_array.each do |tag_id|
+      xpenser_tag_hash.each_pair do |id,name|
+        array << name if tag_id == id
       end
     end
     array
