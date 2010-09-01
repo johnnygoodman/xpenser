@@ -21,29 +21,6 @@ class Expense
   key :tags, Array
   key :type, String # type => company 
 end
-# 
-# class ExpenseCubicle
-#   extend Cubicle::Aggregation
-# 
-#   #date       :date,      :field_name=>'match_date'
-#   #dimension  :month,     :expression=>'this.match_date.substring(0,7)'
-#   #dimension  :year,      :expression=>'this.match_date.substring(0,4)'
-# 
-#   #dimensions :table,
-#   #           :winning_hand
-#   #dimension :winner,     :field_name=>'winner.name'
-# 
-#   #count :total_hands,    :expression=>'true'
-#   #count :total_draws,    :expression=>'this.winning_hand=="draw"'
-#   #dimensions :tags,         :field_name=> 'tags.first'
-#   dimensions :notes,         :field_name => 'notes'
-#   sum        :total_amount,  :field_name=> 'amount'
-#   #dimension :type           :field_name=>'type'
-#   
-#   #avg   :avg_winnings,   :field_name=>'amount_won'
-# 
-#   #ratio :draw_pct,       :total_draws, :total_hands
-# end
 
 class Xpenser
   
@@ -85,15 +62,12 @@ class Xpenser
   #   # => ArgumentError: Could not turn jello into an xpenser formatted date
   #
   # Returns a xpenser date formatted String. 
-  def format_xpenser_dates(date)
+  def self.format_xpenser_dates(date)
     date = date.to_s if date.class == Date
 
     if date =~ /\d{4}-\d{2}-\d{2}/ 
-      puts "we matched without parsing. returning date..."
       return date 
     else
-      puts "we parsed Date.parse(date).strftime('%Y-%m-%d')"
-
       begin
         date = Date.parse(date).strftime('%Y-%m-%d') #need to catch errors here
       rescue
@@ -102,7 +76,6 @@ class Xpenser
     end
 
     if date =~ /\d{4}-\d{2}-\d{2}/ 
-      puts "post parse, we matched. returning date..."
       return date
     else
         "The parsed date is #{date} and is not correctly formatted"

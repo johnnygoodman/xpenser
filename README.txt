@@ -2,7 +2,7 @@ Xpenser Wrapper
 
 == Overview
 
-Ruby Wrapper for Xpenser.com's RESTful API. 
+Ruby Wrapper for Xpenser.com's REST API. 
 
 == Examples
 
@@ -22,20 +22,52 @@ end
  
 
 
+== 0.0.1 Supports 
+
+* Expenses
+** Get All From Default Report
+** Get All Given Report ID 
+** Get One With Given Expense ID
+* Reports
+** Get Report Data Given Report ID
+** Get Current Default Report
+** Get All Reports With A Given Status
+*** :needs_action
+*** :active
+*** :submitted
+*** :approved
+*** :rejected
+*** :paid
+*** :archived
+* Tags
+** Get All 
+** Get One Tag Given Tag ID
+
+No Support For: 
+
+* Delete/Update/Create
+* OAuth
+* Users
+* Receipts
+
+
+
+
+
 == TO DO
 
-1. Support tags arrays in json feeds (DONE)
+1. Fill out class methods for all supported xpenser Expenses, Tags, Categories and Reports. 
 
-2. Support category arrays in json feeds
+2. Support tags arrays in json feeds (DONE)
 
-3. Figure out how to store precision 2 floats in mongodb
+3. Support category arrays in json feeds
 
-4. Fill out class methods for all supported xpenser Expenses, Tags, Categories and Reports. 
+4. Clean up Class structure
 
-5. Implement Cubicle for sum, ave, group and count mongo functionality
+5. Figure out how to store precision 2 floats in mongodb (DONE)
 
-6. Implement Hashie
+6. Implement Cubicle for sum, ave, group and count mongo functionality (POSTPONED)
 
-7. Clean up Class structure
+7. Implement Hashie (POSTPONED)
 
-8. Add currency class
+8. Add currency class (POSTPONED)
