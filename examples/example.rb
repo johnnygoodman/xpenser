@@ -12,17 +12,7 @@ default_report_expenses.each do |row|
   ['report', 'rawamount', 'status', 'created', 'modified', 'user', 'sourceid'].each do |field|
      row['fields'].delete("#{field}")
    end
-  
-  # Deleted Fields 
-  # :report => row['fields']['report'],  
-  #  :modified => row['fields']['modified'],
-  #  :rawamount => row['fields']['rawamount'],
-  #  :status => row['fields']['status'],
-  #  :created => row['fields']['created'],
-  #  :user => row['fields']['user'], 
-  #  :sourceid => row['fields']['sourceid'],
      
-  # Waiting on answer in google groups: 
   amount = BigDecimal.new(row['fields']['amount'], 2).to_s
   puts "amount pre sprintf #{amount}"
   amount = sprintf("%.2f", amount)
@@ -44,52 +34,43 @@ type_sorted_expensese    = Expense.sort(:type).all
 oldest_expense_date      = Expense.sort(:date).first
 newest_expense_date      = Expense.sort(:date).last
 
-#Surely there is a better way to do this
 
-cpapdotcom_amount = Expense.where(:tags => 'CPAP.com')   
-cpapdotcom_total = 0
-cpapdotcom_amount.each { |row| cpapdotcom_total += row['amount'] }
+spend_per_company_total = []
 
-cpapdropshipdotcom_amount = Expense.where(:tags => 'CPAPDropShip.com')   
-cpapdropshipdotcom_total = 0
-cpapdropshipdotcom_amount.each { |row|  cpapdropshipdotcom_total += row['amount'] }
-
-hms_amount = Expense.where(:tags => 'HMS')   
-hms_total = 0
-hms_amount.each { |row| hms_total += row['amount'] }
-
-hmsd_amount = Expense.where(:tags => 'HMSD')   
-hmsd_total = 0
-hmsd_amount.each { |row|  hmsd_total += row['amount'] }
+['CPAP.com', 'CPAPDropShip.com', 'HMS', 'HMSD'].each do |company|
+  amount = Expense.where(:tags => company)
+  total = 0
+  amount.each do |item|
+    total += item['amount']
+  end
+  spend_per_company_total << ["#{company}",total]
+end
 
 amount_total = 0
-all_expenses.each { |row| amount_total += row['amount'] }
+all_expenses.each do |row| 
+  amount_total += row['amount']
+end
+
+spend_per_company_total << ["Total", amount_total]
 
 oldest_date = "#{oldest_expense_date.date.month}/#{oldest_expense_date.date.day}/#{oldest_expense_date.date.year}"
 newest_date = "#{newest_expense_date.date.month}/#{newest_expense_date.date.day}/#{newest_expense_date.date.year}"
 
 wrapper_array = Array.new
 
-total_array = [["CPAP.com", cpapdotcom_total], 
-               ["CPAPDropShip.com", cpapdropshipdotcom_total], 
-               ["HMS", hms_total], 
-               ["HMSD", hmsd_total], 
-               ["Grand Total", amount_total]]
-
-tag_sorted_expenses.each_with_index do |row, index|
-  puts "the row['amount'] is #{row['amount']}"
-  inside_array = Array.new
-  inside_array << Date.parse(row['date'].to_s).strftime('%m/%d/%Y') 
-  inside_array << "%.2f" % row['amount']
-  inside_array << row['type']
-  inside_array << row['notes'].gsub(/\t/, '')
-  inside_array << row['tags'][0]  #=> To support array row['tags'][0]
-  wrapper_array << inside_array
+tag_sorted_expenses.each do |row|
+  wrapper_array << [Date.parse(row['date'].to_s).strftime('%m/%d/%Y'),  
+                    "%.2f" % row['amount'],
+                    row['type'], 
+                    row['notes'].gsub(/\t/, ''),
+                    row['tags'][0]]
 end
 
-query_results = ExpenseCubicle.query { select :notes }
+pp wrapper_array
 
-pp query_results
+# query_results = ExpenseCubicle.query { select :notes }
+# 
+# pp query_results
 
 
 Prawn::Document.generate("johnny-expenses.pdf") do
@@ -110,7 +91,7 @@ Prawn::Document.generate("johnny-expenses.pdf") do
   
   text "Totals: "
   
-  table total_array, 
+  table spend_per_company_total, 
   :headers => ['Company', 'Total'], 
   :border_style => :grid, 
   :font_size => 8

@@ -11,84 +11,39 @@ require 'cubicle'
 
 #http://tomdoc.org/
 
-module FloatToDecimalPrecision
-  extend self
-
-  def to_mongo(value)
-    value.nil? ? nil : value.to_f
-
-    # # raise value.inspect
-    #   100
-    #   #value = 100
-    #   #value.nil? ? nil : value.to_f
-  end
-   # 
-   def from_mongo(value)
-    value
-   #  raise value.inspect unless value.nil?
-   #  # value * 1000 unless value.nil?
-   end
-
-end
-
-
 class Expense
   include MongoMapper::Document
   
   key :expense_id, ObjectId
-  key :amount, FloatToDecimalPrecision
+  key :amount, Float
   key :date, Time
   key :notes, String
   key :tags, Array
   key :type, String # type => company 
 end
-
-
-
-class ExpenseCubicle
-  extend Cubicle::Aggregation
-
-  #date       :date,      :field_name=>'match_date'
-  #dimension  :month,     :expression=>'this.match_date.substring(0,7)'
-  #dimension  :year,      :expression=>'this.match_date.substring(0,4)'
-
-  #dimensions :table,
-  #           :winning_hand
-  #dimension :winner,     :field_name=>'winner.name'
-
-  #count :total_hands,    :expression=>'true'
-  #count :total_draws,    :expression=>'this.winning_hand=="draw"'
-  #dimensions :tags,         :field_name=> 'tags.first'
-  dimensions :notes,         :field_name => 'notes'
-  sum        :total_amount,  :field_name=> 'amount'
-  #dimension :type           :field_name=>'type'
-  
-  #avg   :avg_winnings,   :field_name=>'amount_won'
-
-  #ratio :draw_pct,       :total_draws, :total_hands
-end
-
-
-=begin
-class FloatToDecimalPrecision < Float
-  
-  def self.to_mongo(value)
-    two_decimal_float = 0
-    value.each do |array_element|
-      array_element.each do |float|
-        amount = BigDecimal.new(float)
-        rounded = (amount * 100).round / 100
-        two_decimal_float = printf('%.02f', rounded)
-      end
-    end
-    two_decimal_float
-  end
-
-  def self.from_mongo(value)
-    value || nil
-  end
-end
-=end  
+# 
+# class ExpenseCubicle
+#   extend Cubicle::Aggregation
+# 
+#   #date       :date,      :field_name=>'match_date'
+#   #dimension  :month,     :expression=>'this.match_date.substring(0,7)'
+#   #dimension  :year,      :expression=>'this.match_date.substring(0,4)'
+# 
+#   #dimensions :table,
+#   #           :winning_hand
+#   #dimension :winner,     :field_name=>'winner.name'
+# 
+#   #count :total_hands,    :expression=>'true'
+#   #count :total_draws,    :expression=>'this.winning_hand=="draw"'
+#   #dimensions :tags,         :field_name=> 'tags.first'
+#   dimensions :notes,         :field_name => 'notes'
+#   sum        :total_amount,  :field_name=> 'amount'
+#   #dimension :type           :field_name=>'type'
+#   
+#   #avg   :avg_winnings,   :field_name=>'amount_won'
+# 
+#   #ratio :draw_pct,       :total_draws, :total_hands
+# end
 
 class Xpenser
   
