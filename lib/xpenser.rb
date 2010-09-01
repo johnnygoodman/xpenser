@@ -11,15 +11,39 @@ require 'cubicle'
 
 #http://tomdoc.org/
 
+module FloatToDecimalPrecision
+  extend self
+
+  def to_mongo(value)
+    value.nil? ? nil : value.to_f
+
+    # # raise value.inspect
+    #   100
+    #   #value = 100
+    #   #value.nil? ? nil : value.to_f
+  end
+   # 
+   def from_mongo(value)
+    value
+   #  raise value.inspect unless value.nil?
+   #  # value * 1000 unless value.nil?
+   end
+
+end
+
+
 class Expense
   include MongoMapper::Document
+  
   key :expense_id, ObjectId
-  key :amount, Float #FloatToDecimalPrecision
+  key :amount, FloatToDecimalPrecision
   key :date, Time
   key :notes, String
-  key :tags, String
+  key :tags, Array
   key :type, String # type => company 
 end
+
+
 
 class ExpenseCubicle
   extend Cubicle::Aggregation
@@ -34,9 +58,9 @@ class ExpenseCubicle
 
   #count :total_hands,    :expression=>'true'
   #count :total_draws,    :expression=>'this.winning_hand=="draw"'
-  dimensions :tags,
-             :date
-  sum       :total_amount,  :field_name=>'amount'
+  #dimensions :tags,         :field_name=> 'tags.first'
+  dimensions :notes,         :field_name => 'notes'
+  sum        :total_amount,  :field_name=> 'amount'
   #dimension :type           :field_name=>'type'
   
   #avg   :avg_winnings,   :field_name=>'amount_won'

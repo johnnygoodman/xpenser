@@ -24,9 +24,9 @@ default_report_expenses.each do |row|
      
   # Waiting on answer in google groups: 
   amount = BigDecimal.new(row['fields']['amount'], 2).to_s
-  #puts "amount pre sprintf #{amount}"
+  puts "amount pre sprintf #{amount}"
   amount = sprintf("%.2f", amount)
-  #puts "amount post sprintf #{amount}"
+  puts "amount post sprintf #{amount}"
      
   Expense.create(:notes => row['fields']['notes'],
                  :amount => "#{amount}",
@@ -77,18 +77,19 @@ total_array = [["CPAP.com", cpapdotcom_total],
                ["Grand Total", amount_total]]
 
 tag_sorted_expenses.each_with_index do |row, index|
+  puts "the row['amount'] is #{row['amount']}"
   inside_array = Array.new
   inside_array << Date.parse(row['date'].to_s).strftime('%m/%d/%Y') 
-  inside_array << row['amount']
+  inside_array << "%.2f" % row['amount']
   inside_array << row['type']
   inside_array << row['notes'].gsub(/\t/, '')
-  inside_array << row['tags']  #=> To support array row['tags'][0]
+  inside_array << row['tags'][0]  #=> To support array row['tags'][0]
   wrapper_array << inside_array
 end
 
-#query_results = ExpenseCubicle.query { select :tags, :date }
+query_results = ExpenseCubicle.query { select :notes }
 
-#pp query_results
+pp query_results
 
 
 Prawn::Document.generate("johnny-expenses.pdf") do
